@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobertura Bomberos — Osorno | Creado por N.Carrasco - 2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<style>
+:root{--ink:#1c1f26;--paper:#f2efe9;--panel:#fff;--line:#dcd6c8;--muted:#6b6558}
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Arial,sans-serif;background:var(--paper);color:var(--ink)}
+#app{display:flex;height:100vh;width:100vw;overflow:hidden}
+#sidebar{width:350px;min-width:350px;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto}
+.brand{padding:20px;border-bottom:2px solid var(--ink)}.brand h1{font-size:19px;margin:0 0 6px;font-weight:700}.brand p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.section{padding:16px 20px;border-bottom:1px solid var(--line)}.section h2{font-size:12px;margin:0 0 11px;color:var(--muted);font-weight:700}
+.company-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px}.swatch{width:13px;height:13px;border-radius:2px;flex:none}.body{flex:1}.name{font-weight:700}.addr{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.toggle-box{background:#faf8f3;border:1px solid var(--line);border-radius:6px;padding:11px 12px;margin-top:10px}.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.label{font-size:13px;font-weight:700}.sub{font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
+.switch{position:relative;width:40px;height:22px;flex:none}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;background:#cfc9ba;border-radius:22px;cursor:pointer}.slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}.switch input:checked+.slider{background:#1c1f26}.switch input:checked+.slider:before{transform:translateX(18px)}
+select{padding:7px;border:1px solid var(--line);border-radius:5px;background:#faf8f3;font-size:12px;width:100%}
+#stats{font-size:12px}.stat{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dotted var(--line)}
+#status{font-size:11.5px;color:var(--muted);line-height:1.5}.ok{color:#3a7d52}.warn{color:#9a6c12}.err{color:#b3402c}
+.foot{padding:15px 20px;font-size:10.8px;color:var(--muted);line-height:1.5}
+#map{flex:1;height:100%}
+button{padding:8px 10px;border:1px solid var(--ink);background:white;border-radius:5px;cursor:pointer;font-size:12px;width:100%;margin-top:10px;font-weight:bold}
+button:hover{background:#1c1f26;color:white}
+@media(max-width:760px){#app{flex-direction:column}#sidebar{width:100%;min-width:0;height:45vh}#map{height:55vh}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+<div class="brand">
+<h1>◆ Cobertura por cercanía</h1>
+<p>Osorno · cobertura y puntos de encuentro entre compañías.<br>
+Cálculo por red vial, con opción de <b>sentido del tránsito</b>.<br><b>Creado por N.Carrasco - 2026</b></p>
+</div>
+
+<div class="section">
+<h2>COMPAÑÍAS</h2><div id="company-list"></div>
+<div class="toggle-box"><div class="toggle-row"><div><div class="label">Cuartel futuro — 1ª Cía.</div>
+<div class="sub">Alsacia esq. Av. Zenteno, en vez de Patricio Lynch 1866.</div></div>
+<label class="switch"><input type="checkbox" id="futureToggle"><span class="slider"></span></label></div></div>
+<button id="resetPosBtn">Restablecer posiciones originales</button>
+</div>
+
+<div class="section">
+<h2>VARIABLE DE CÁLCULO</h2>
+<div class="toggle-box" style="margin-top:0"><div class="toggle-row"><div>
+<div class="label">Considerar sentido del tránsito</div>
+<div class="sub">Respeta calles de un solo sentido según OpenStreetMap. Activado = rutas dirigidas.</div>
+</div><label class="switch"><input type="checkbox" id="trafficToggle" checked><span class="slider"></span></label></div></div>
+</div>
+
+<div class="section">
+<h2>PUNTO DE ENCUENTRO / LÍMITE</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+<select id="pairA"></select><select id="pairB"></select>
+</div>
+<p style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:0">
+Al seleccionar dos compañías, el mapa destaca los tramos donde ambas alcanzan una zona desde sus respectivos cuarteles. Con sentido del tránsito, el límite se determina usando las distancias de las rutas dirigidas.
+</p>
+</div>
+
+<div class="section">
+<h2>RESULTADOS</h2><div id="stats"></div><div id="boundary-summary" style="margin-top:10px"></div>
+</div>
+
+<div class="section"><h2>ESTADO</h2><div id="status"></div></div>
+<div class="foot">
+Cada nodo de la red vial se asigna a la compañía que puede alcanzarlo con menor distancia de recorrido.
+<br><br>
+<b>Nota:</b> Puedes arrastrar los puntos en el mapa. Las nuevas ubicaciones se guardan automáticamente en tu navegador.
+<br><br>
+<b>Creado por N.Carrasco - 2026</b>
+</div>
+</div>
+<div id="map"></div>
+</div>
+
+<script>
+const STATIONS=[
+{id:'c1',name:'1ª Compañía',addr:'Patricio Lynch 1866',color:'#b3402c'},
+{id:'c2',name:'2ª Compañía',addr:"Bernardo O'Higgins 909",color:'#2f6fb0'},
+{id:'c3',name:'3ª Compañía',addr:'Av. Juan Mackenna 1259',color:'#3a7d52'},
+{id:'c6',name:'6ª Compañía',addr:'Antofagasta 640',color:'#c68a2e'},
+{id:'c7',name:'7ª Compañía',addr:'Felizardo Asenjo 185',color:'#7a539a'},
+{id:'c8',name:'8ª Compañía',addr:'Avenida Real 1347',color:'#1f8a86'}];
+const FUTURE={a:'alsacia',b:'zenteno',label:'Alsacia esq. Av. Zenteno'};
+const BBOX=[-40.62,-73.20,-40.53,-73.06];
+let map,layerGroup,nodes={},adj={},ways=[],edges=[],corners=[];
+let stationNode={},futureNode=null,lastDist={},lastOwner={},osmData=null;
+
+function log(s,cls=''){const d=document.createElement('div');d.className=cls;d.textContent=s;document.getElementById('status').appendChild(d)}
+function hav(a,b){const R=6371000,rad=x=>x*Math.PI/180,dlat=rad(b.lat-a.lat),dlon=rad(b.lon-a.lon);
+return 2*R*Math.asin(Math.sqrt(Math.sin(dlat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dlon/2)**2))}
+function nearest(lat,lon){let best=null,bd=Infinity;for(const id in nodes){const d=hav(nodes[id],{lat,lon});if(d<bd){bd=d;best=id}}return best}
+function enabled(){return STATIONS.filter(s=>document.getElementById('toggle-'+s.id)?.checked)}
+function color(id){return STATIONS.find(s=>s.id===id)?.color||'#777'}
+function key(a,b){return[a,b].sort().join('|')}
+
+function buildGraph(data){
+nodes={};adj={};ways=[];edges=[];corners=[];
+const useDir=document.getElementById('trafficToggle').checked;
+data.elements.forEach(e=>{if(e.type==='node')nodes[e.id]={lat:e.lat,lon:e.lon}});
+data.elements.forEach(e=>{
+if(e.type!=='way'||!e.nodes||e.nodes.length<2)return;
+ways.push({name:(e.tags&&e.tags.name)||'',ids:e.nodes});
+for(let i=0;i<e.nodes.length-1;i++){
+let a=e.nodes[i],b=e.nodes[i+1];if(!nodes[a]||!nodes[b])continue;
+let d=hav(nodes[a],nodes[b]),ow=String((e.tags&&e.tags.oneway)||'').toLowerCase();
+if(useDir&&['yes','1','true'].includes(ow)){(adj[a]??=[]).push({to:b,dist:d})}
+else if(useDir&&ow==='-1'){(adj[b]??=[]).push({to:a,dist:d})}
+else{(adj[a]??=[]).push({to:b,dist:d});(adj[b]??=[]).push({to:a,dist:d})}
+edges.push({a,b});
+}
+});
+const count={};ways.forEach(w=>w.ids.forEach(id=>count[id]=(count[id]||0)+1));
+Object.keys(adj).forEach(id=>{if(count[id]>=2)corners.push(id)});
+if(!corners.length)corners=Object.keys(adj);
+}
+
+function dijkstra(sources){
+const dist={},owner={},heap=[];
+function push(x){heap.push(x);let i=heap.length-1;while(i){let p=(i-1)>>1;if(heap[p].d<=heap[i].d)break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p}}
+function pop(){const t=heap[0],x=heap.pop();if(heap.length){heap[0]=x;let i=0;while(1){let l=i*2+1,r=l+1,m=i;if(l<heap.length&&heap[l].d<heap[m].d)m=l;if(r<heap.length&&heap[r].d<heap[m].d)m=r;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m}}return t}
+sources.forEach(s=>{dist[s.node]=0;owner[s.node]=s.sid;push({id:s.node,d:0,sid:s.sid})});
+while(heap.length){let c=pop();if(c.d!==dist[c.id])continue;(adj[c.id]||[]).forEach(e=>{let nd=c.d+e.dist;if(nd<(dist[e.to]??Infinity)){dist[e.to]=nd;owner[e.to]=c.sid;push({id:e.to,d:nd,sid:c.sid})}})}
+return{dist,owner}
+}
+
+function intersection(a,b){
+let A=new Set(),B=new Set();ways.forEach(w=>{let n=w.name.toLowerCase();if(n.includes(a))w.ids.forEach(x=>A.add(x));if(n.includes(b))w.ids.forEach(x=>B.add(x))});
+for(const x of A)if(B.has(x))return x;return null
+}
+
+function render(){
+layerGroup.clearLayers();
+const A=document.getElementById('pairA').value,B=document.getElementById('pairB').value,active=A&&B&&A!==B?key(A,B):null;
+const boundaries={};
+edges.forEach(e=>{
+let oa=lastOwner[e.a],ob=lastOwner[e.b],na=nodes[e.a],nb=nodes[e.b];if(!na||!nb)return;
+if(oa&&ob&&oa!==ob){
+let segLen=hav(na,nb)||1,x=(lastDist[e.b]+segLen-lastDist[e.a])/2;x=Math.max(0,Math.min(segLen,x));let t=x/segLen;
+let p={lat:na.lat+(nb.lat-na.lat)*t,lon:na.lon+(nb.lon-na.lon)*t};
+let k=key(oa,ob);boundaries[k]=(boundaries[k]||0)+1;
+if(!active||k===active){L.polyline([[na.lat,na.lon],[p.lat,p.lon]],{color:color(oa),weight:4,opacity:.9}).addTo(layerGroup);
+L.polyline([[p.lat,p.lon],[nb.lat,nb.lon]],{color:color(ob),weight:4,opacity:.9}).addTo(layerGroup);
+L.circleMarker([p.lat,p.lon],{radius:active?6:4,color:'#111',fillColor:'#111',fillOpacity:.9}).bindPopup(`<b>Punto de encuentro</b><br>${STATIONS.find(s=>s.id===oa).name} / ${STATIONS.find(s=>s.id===ob).name}<br>Distancia aproximada desde ${STATIONS.find(s=>s.id===oa).name}: ${((lastDist[e.a]+x)/1000).toFixed(2)} km`).addTo(layerGroup)}
+}else{let o=oa||ob;if(o)L.polyline([[na.lat,na.lon],[nb.lat,nb.lon]],{color:color(o),weight:2,opacity:active?.12:.45}).addTo(layerGroup)}
+});
+if(!active){corners.forEach(id=>{let o=lastOwner[id];if(o)L.circleMarker([nodes[id].lat,nodes[id].lon],{radius:1.6,color:color(o),fillColor:color(o),fillOpacity:.6,weight:0}).addTo(layerGroup)})}
+
+enabled().forEach(s=>{
+let isFuture = s.id === 'c1' && document.getElementById('futureToggle').checked;
+let nid = isFuture ? futureNode : stationNode[s.id];
+if(!nid||!nodes[nid])return;
+
+const icon=L.divIcon({className:'',html:`<div style="width:16px;height:16px;background:${s.color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 3px #555;cursor:grab"></div>`,iconSize:[16,16],iconAnchor:[8,16]});
+
+const marker = L.marker([nodes[nid].lat,nodes[nid].lon],{icon, draggable: true})
+.bindPopup(`<b>${s.name}</b><br>${isFuture?FUTURE.label:s.addr}<br><i style="font-size:10px;color:#555">(Arrastra para cambiar ubicación)</i>`)
+.addTo(layerGroup);
+
+marker.on('dragend', function(e){
+  const pos = e.target.getLatLng();
+  const newNid = nearest(pos.lat, pos.lng);
+  
+  if(isFuture){
+    futureNode = newNid;
+    localStorage.setItem('saved_futureNode', newNid);
+  } else {
+    stationNode[s.id] = newNid;
+    const saved = JSON.parse(localStorage.getItem('saved_stationNodes') || '{}');
+    saved[s.id] = newNid;
+    localStorage.setItem('saved_stationNodes', JSON.stringify(saved));
+  }
+  recompute();
+});
+});
+
+let stats='';enabled().forEach(s=>{let n=corners.filter(id=>lastOwner[id]===s.id).length;stats+=`<div class="stat"><span>${s.name}</span><b style="color:${s.color}">${n}</b></div>`});document.getElementById('stats').innerHTML=stats;
+let bs=Object.entries(boundaries).sort((a,b)=>b[1]-a[1]).map(([k,n])=>{let[x,y]=k.split('|');return `<div style="padding:3px 0">${STATIONS.find(s=>s.id===x).name} × ${STATIONS.find(s=>s.id===y).name}: <b>${n}</b> tramos</div>`}).join('');
+document.getElementById('boundary-summary').innerHTML=bs||'<span style="color:#6b6558">No se detectaron fronteras con los datos disponibles.</span>';
+}
+
+function recompute(){
+const sources=enabled().map(s=>({sid:s.id,node:s.id==='c1'&&document.getElementById('futureToggle').checked?futureNode:stationNode[s.id]})).filter(x=>x.node);
+if(!sources.length)return;({dist:lastDist,owner:lastOwner}=dijkstra(sources));render()
+}
+function pairs(){
+let a=document.getElementById('pairA'),b=document.getElementById('pairB'),oldA=a.value,oldB=b.value;
+let o='<option value="">—</option>'+enabled().map(s=>`<option value="${s.id}">${s.name}</option>`).join('');a.innerHTML=o;b.innerHTML=o;
+if([...a.options].some(x=>x.value===oldA))a.value=oldA;if([...b.options].some(x=>x.value===oldB))b.value=oldB
+}
+function companyUI(){let box=document.getElementById('company-list');box.innerHTML='';STATIONS.forEach(s=>{let d=document.createElement('div');d.className='company-row';d.innerHTML=`<input id="toggle-${s.id}" type="checkbox" checked><span class="swatch" style="background:${s.color}"></span><div class="body"><span class="name">${s.name}</span><span class="addr">${s.addr}</span></div>`;box.appendChild(d);d.querySelector('input').onchange=()=>{if(!enabled().length){d.querySelector('input').checked=true;return}pairs();recompute()}})}
+
+async function geocode(q){const u='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cl&q='+encodeURIComponent(q);const r=await fetch(u,{headers:{'Accept-Language':'es'}});const d=await r.json();return d[0]?{lat:+d[0].lat,lon:+d[0].lon}:null}
+async function roads(){const [s,w,n,e]=BBOX;const q=`[out:json][timeout:60];way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service)$"](${s},${w},${n},${e});out body;>;out skel qt;`;
+for(const host of ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.openstreetmap.fr/api/interpreter'])try{let r=await fetch(host,{method:'POST',body:'data='+encodeURIComponent(q)});if(r.ok){let d=await r.json();if(d.elements?.length)return d}}catch(e){}throw Error('No se pudo descargar la red vial.')}
+async function main(){
+companyUI();map=L.map('map').setView([-40.574,-73.134],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);layerGroup=L.layerGroup().addTo(map);
+log('Ubicando cuarteles…');
+for(const s of STATIONS){try{let p=await geocode(s.addr+', Osorno, Chile');if(p){s.lat=p.lat;s.lon=p.lon;log(s.name+' ubicada.','ok')}}catch(e){log(s.name+' no pudo ser ubicada.','warn')}await new Promise(r=>setTimeout(r,800))}
+try{
+log('Descargando red vial…');osmData=await roads();buildGraph(osmData);log('Red vial cargada.','ok');
+STATIONS.forEach(s=>{if(s.lat!=null)stationNode[s.id]=nearest(s.lat,s.lon)});
+futureNode=intersection(FUTURE.a,FUTURE.b);
+
+// Cargar ubicaciones guardadas
+const savedNodes = JSON.parse(localStorage.getItem('saved_stationNodes') || '{}');
+Object.keys(savedNodes).forEach(id => {
+  if(nodes[savedNodes[id]]) stationNode[id] = savedNodes[id];
+});
+const savedFuture = localStorage.getItem('saved_futureNode');
+if(savedFuture && nodes[savedFuture]) futureNode = savedFuture;
+
+pairs();recompute();log('Mapa de cobertura listo.','ok')
+}catch(e){log(e.message,'err')}
+}
+
+document.getElementById('resetPosBtn').onclick=()=>{
+  localStorage.removeItem('saved_stationNodes');
+  localStorage.removeItem('saved_futureNode');
+  STATIONS.forEach(s=>{if(s.lat!=null)stationNode[s.id]=nearest(s.lat,s.lon)});
+  futureNode=intersection(FUTURE.a,FUTURE.b);
+  recompute();
+  log('Ubicaciones restablecidas a los valores por defecto.','ok');
+};
+
+document.getElementById('pairA').onchange=render;document.getElementById('pairB').onchange=render;
+document.getElementById('futureToggle').onchange=recompute;
+document.getElementById('trafficToggle').onchange=()=>{if(osmData){buildGraph(osmData);STATIONS.forEach(s=>{if(s.lat!=null)stationNode[s.id]=nearest(s.lat,s.lon)});futureNode=intersection(FUTURE.a,FUTURE.b);log(document.getElementById('trafficToggle').checked?'Sentido del tránsito ACTIVADO.':'Sentido del tránsito DESACTIVADO.','ok');recompute()}};
+main();
+</script>
+</body></html>
